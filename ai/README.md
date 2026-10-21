@@ -309,7 +309,7 @@ resume; hasilnya tidak lagi sebanding.
 Kalau Colab GPU sedang tidak tersedia, planner Gemma 270M masih bisa diuji di
 RTX 2050 4 GB dengan 2.000 baris dan batch 1. Panduan lengkap, termasuk setup
 Python 3.12, install PyTorch CUDA, penanganan OOM, dan batas realistis untuk
-responder 1.7B, ada di [`ai/docs/local-training.md`](docs/local-training.md).
+responder 1.7B, ada di [`LOCAL_TRAINING.md`](../LOCAL_TRAINING.md).
 
 ---
 
