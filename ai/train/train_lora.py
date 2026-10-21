@@ -30,6 +30,17 @@ Colab/Drive resume:
     --output-dir /content/drive/MyDrive/studysphere_runs/planner \
     --save-steps 200 --save-total-limit 3 \
     --resume-from-checkpoint auto
+
+Local 4 GB smoke test (planner only):
+
+  python ai/train/train_lora.py \
+    --base-model google/gemma-3-270m-it \
+    --train-file ai/data/planner/train.jsonl \
+    --val-file ai/data/planner/val.jsonl \
+    --output-dir ai/out/local-planner \
+    --limit-train 2000 --limit-val 200 \
+    --epochs 1 --batch-size 1 --grad-accum 16 \
+    --max-seq-length 768 --gradient-checkpointing
 """
 
 from __future__ import annotations
@@ -75,6 +86,8 @@ def parse_args():
     parser.add_argument("--base-model", required=True)
     parser.add_argument("--train-file", required=True)
     parser.add_argument("--val-file", required=True)
+    parser.add_argument("--limit-train", type=int, default=0, help="use only the first N train rows (0 = all)")
+    parser.add_argument("--limit-val", type=int, default=0, help="use only the first N validation rows (0 = all)")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--max-seq-length", type=int, default=1280)
     parser.add_argument("--epochs", type=float, default=3)
@@ -203,6 +216,11 @@ def main():
         "json",
         data_files={"train": args.train_file, "validation": args.val_file},
     )
+    if args.limit_train and len(raw["train"]) > args.limit_train:
+        raw["train"] = raw["train"].select(range(args.limit_train))
+    if args.limit_val and len(raw["validation"]) > args.limit_val:
+        raw["validation"] = raw["validation"].select(range(args.limit_val))
+    print(f"raw train rows: {len(raw['train'])}, raw val rows: {len(raw['validation'])}")
 
     def tokenize(example):
         messages = example["messages"]
@@ -299,6 +317,8 @@ def main():
                 "save_steps": args.save_steps,
                 "save_total_limit": args.save_total_limit,
                 "resume_from_checkpoint": str(resume_checkpoint) if resume_checkpoint else None,
+                "limit_train": args.limit_train,
+                "limit_val": args.limit_val,
                 "train_rows": len(tokenized["train"]),
                 "val_rows": len(tokenized["validation"]),
             },

@@ -304,6 +304,13 @@ Untuk memulai dari nol, ganti menjadi `--resume-from-checkpoint none`, atau
 hapus folder output. Jangan mengubah dataset/prompt/hyperparameter di tengah
 resume; hasilnya tidak lagi sebanding.
 
+### 5.7 Training ringan di laptop 4 GB
+
+Kalau Colab GPU sedang tidak tersedia, planner Gemma 270M masih bisa diuji di
+RTX 2050 4 GB dengan 2.000 baris dan batch 1. Panduan lengkap, termasuk setup
+Python 3.12, install PyTorch CUDA, penanganan OOM, dan batas realistis untuk
+responder 1.7B, ada di [`ai/docs/local-training.md`](docs/local-training.md).
+
 ---
 
 ## 6. Evaluasi sebelum deploy

@@ -179,7 +179,7 @@ STUDYSPHERE_LLM_URL=http://localhost:11434/v1 STUDYSPHERE_LLM_MODEL=nama-model-s
 
 Model menerima system prompt berisi data ruangan terbaru dan daftar perintah yang boleh dipakai, lalu harus menjawab satu objek JSON: `{"say": "...", "mood": "happy", "command": {"lamp": "on"}}` (`command` boleh `null`). Data latih SFT sebaiknya memakai format yang sama. Di Windows, Ollama perlu `OLLAMA_ORIGINS=*` supaya bisa dipanggil dari aplikasi. Whisper dan suara tetap memakai Groq sampai ada pengganti lokal.
 
-Panduan lengkap untuk membuat dan memasang model lokal sendiri — dataset sintetis, LoRA Gemma 3 270M + Qwen3 1.7B, evaluasi, sampai integrasi dua tahap — ada di [`ai/README.md`](ai/README.md). Untuk training di Colab, gunakan notebook [`studysphere_colab.ipynb`](studysphere_colab.ipynb); checkpoint otomatis disimpan ke Google Drive dan bisa dilanjutkan setelah runtime habis.
+Panduan lengkap untuk membuat dan memasang model lokal sendiri — dataset sintetis, LoRA Gemma 3 270M + Qwen3 1.7B, evaluasi, sampai integrasi dua tahap — ada di [`ai/README.md`](ai/README.md). Untuk training di Colab, gunakan notebook [`studysphere_colab.ipynb`](studysphere_colab.ipynb); checkpoint otomatis disimpan ke Google Drive dan bisa dilanjutkan setelah runtime habis. Kalau GPU Colab sedang tidak tersedia, step ringan di laptop 4 GB ada di [`ai/docs/local-training.md`](ai/docs/local-training.md).
 
 Screenshot island (tersembunyi, satu baris, terbuka) ada di `desktop/screenshots/`.
 
