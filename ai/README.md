@@ -82,6 +82,10 @@ ai/
 
 ## 3. Quick start 30 menit (tanpa training)
 
+Untuk training di Colab, buka notebook `studysphere_colab.ipynb` di root repo.
+Notebook itu sudah berisi setup, checkpoint/resume ke Drive, training, merge,
+dan urutan evaluasi.
+
 Kalau kamu cuma mau memastikan datasetnya sehat:
 
 ```sh
@@ -287,10 +291,14 @@ python ai/train/train_lora.py ^
 Kalau runtime mati:
 
 1. Buka Colab baru dan mount Drive.
-2. Generate ulang dataset (deterministik, ±1 menit).
+2. Generate ulang dataset (deterministik, sekitar 1 menit).
 3. Jalankan command yang sama.
 4. `--resume-from-checkpoint auto` mencari `checkpoint-*` terbaru yang punya
    `trainer_state.json`, lalu melanjutkan dari step terakhir.
+
+Kalau runtime mati sebelum training selesai, `run.json` mungkin belum terbentuk;
+itu normal. Yang penting folder `checkpoint-*` sudah lengkap. Adapter final baru
+ditulis setelah `trainer.train()` selesai.
 
 Untuk memulai dari nol, ganti menjadi `--resume-from-checkpoint none`, atau
 hapus folder output. Jangan mengubah dataset/prompt/hyperparameter di tengah

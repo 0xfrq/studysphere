@@ -22,7 +22,14 @@ Planner (Gemma 3 270M fits in bf16 on most 8 GB GPUs):
     --train-file ai/data/planner/train.jsonl \
     --val-file ai/data/planner/val.jsonl \
     --output-dir ai/out/planner \
-    --epochs 4 --batch-size 8 --grad-accum 2
+    --epochs 2 --batch-size 8 --grad-accum 2
+
+Colab/Drive resume:
+
+  python ai/train/train_lora.py ... \
+    --output-dir /content/drive/MyDrive/studysphere_runs/planner \
+    --save-steps 200 --save-total-limit 3 \
+    --resume-from-checkpoint auto
 """
 
 from __future__ import annotations
@@ -98,11 +105,16 @@ def latest_checkpoint(output_dir: Path) -> Path | None:
     """Return the newest checkpoint that has a complete trainer state."""
     candidates = []
     for path in output_dir.glob("checkpoint-*"):
-        if not path.is_dir() or not (path / "trainer_state.json").is_file():
+        state_file = path / "trainer_state.json"
+        if not path.is_dir() or not state_file.is_file():
             continue
         try:
-            step = int(path.name.rsplit("-", 1)[1])
-        except (IndexError, ValueError):
+            name_parts = path.name.rsplit("-", 1)
+            if len(name_parts) != 2:
+                continue
+            state = json.loads(state_file.read_text(encoding="utf-8"))
+            step = int(state.get("global_step", name_parts[1]))
+        except (OSError, ValueError, json.JSONDecodeError):
             continue
         candidates.append((step, path))
     return max(candidates, key=lambda item: item[0])[1] if candidates else None
