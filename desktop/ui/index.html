@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudySphere</title>
+<style>
+  /* The island is always dark, like a notch hanging from the top of the screen. */
+  :root {
+    color-scheme: dark;
+    --island: #0b0c0e; --card: #17181c; --raised: #24262c; --ink: #f5f6f8; --dim: #9aa0a9; --hairline: rgba(255, 255, 255, .08);
+    --owl: #f2b84b; --owl-dark: #d48f2c; --belly: #f9dc9b; --face: #fdf5e4; --face-ink: #1d2a33;
+    --iris: #f39a1e; --beak: #ef7d34; --beak-dark: #c35d1d; --blush: #ff7d97; --mouth-in: #5b2414;
+    --warn: #ff8d97; --rec: #ff6f61; --focus: #7cb8ec;
+    --ear: 10px;
+    --ease: cubic-bezier(.2, .9, .3, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: transparent; overflow: hidden; }
+  body {
+    font: 13px/1.4 system-ui, "Segoe UI", Ubuntu, sans-serif; color: var(--ink);
+    -webkit-font-smoothing: antialiased; user-select: none; cursor: default;
+  }
+  ::selection { background: rgba(242, 184, 75, .35); }
+
+  #island {
+    position: relative; margin: 0 auto; width: 140px; height: 6px;
+    background: var(--island); border-radius: 0 0 6px 6px;
+    transition: width .3s var(--ease), height .3s var(--ease), border-radius .3s var(--ease);
+  }
+  /* The inverted corners that join the island to the screen edge. */
+  #island::before, #island::after { content: ""; position: absolute; top: 0; width: var(--ear); height: var(--ear); }
+  #island::before { left: calc(-1 * var(--ear)); background: radial-gradient(circle at 0 100%, transparent calc(var(--ear) - .5px), var(--island) var(--ear)); }
+  #island::after { right: calc(-1 * var(--ear)); background: radial-gradient(circle at 100% 100%, transparent calc(var(--ear) - .5px), var(--island) var(--ear)); }
+  #island[data-state="hidden"] { border-radius: 0 0 14px 14px; }
+  #island[data-state="compact"] { border-radius: 0 0 18px 18px; }
+  #island[data-state="expanded"] { border-radius: 0 0 26px 26px; }
+  #clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+
+  .view {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    opacity: 0; visibility: hidden; transition: opacity .15s, visibility 0s .15s;
+  }
+  #island[data-state="hidden"] #mini, #island[data-state="compact"] #compact, #island[data-state="expanded"] #expanded {
+    opacity: 1; visibility: visible; transition: opacity .2s .1s, visibility 0s;
+  }
+
+  #compact { width: 300px; height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 18px 0 12px; cursor: pointer; }
+  #compact .owl { width: 30px; height: 30px; margin-top: 2px; flex: none; }
+  #mini { width: 52px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  #mini .owl { width: 24px; height: 24px; }
+  #compact-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+  .lamp { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--dim); flex: none; }
+  .lamp-on .lamp { background: var(--owl); border-color: var(--owl); }
+
+  #expanded { width: 560px; padding: 12px 20px 18px; }
+  .head { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start; }
+  .head .owl { width: 84px; height: 84px; }
+  .speech { min-width: 0; padding-top: 8px; }
+  .bubble { position: relative; width: fit-content; max-width: 100%; background: var(--card); border-radius: 14px; padding: 10px 14px; min-height: 42px; }
+  .bubble::before {  /* the tail, pointing at the owl */
+    content: ""; position: absolute; left: -5px; top: 15px; width: 12px; height: 12px;
+    background: var(--card); border-radius: 2px; transform: rotate(45deg);
+  }
+  #say { position: relative; font-size: 15px; font-weight: 500; line-height: 1.35; text-wrap: pretty; user-select: text; }
+  .dots { display: none; gap: 5px; height: 21px; align-items: center; }
+  .dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); animation: dot 1.1s infinite; }
+  .dots i:nth-child(2) { animation-delay: .15s; }
+  .dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes dot { 0%, 60%, 100% { opacity: .35; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
+  .bubble.thinking #say { display: none; }
+  .bubble.thinking .dots { display: flex; }
+  #status { font-size: 12px; margin: 6px 0 0 4px; }
+  .warn { color: var(--warn); }
+  .dim, .hint { color: var(--dim); }
+  .hint { font-size: 12px; }
+  .window-buttons { display: flex; align-items: center; margin-top: 4px; }
+  .window-buttons button { color: var(--dim); padding: 4px 8px; }
+  #minimize svg { display: block; }
+
+  /* Talking with the owl: the mic, or typing. */
+  .chat { display: flex; align-items: center; gap: 4px; margin-top: 12px; padding: 4px; background: var(--card); border-radius: 14px; }
+  .chat:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .chat input { flex: 1; border: 0; background: transparent; padding: 8px 6px; font-size: 14px; }
+  .chat input:focus-visible { outline: none; }
+  .icon { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; flex: none; }
+  .icon svg { display: block; }
+  #mic { position: relative; isolation: isolate; background: var(--raised); }
+  /* The ring swells with your voice while the owl listens. */
+  #mic::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--rec);
+    opacity: 0; transform: scale(calc(1 + var(--level, 0) * .6)); transition: transform 90ms linear, opacity .2s;
+  }
+  #mic[aria-pressed="true"] { background: var(--rec); color: #22100d; }
+  #mic[aria-pressed="true"]::before { opacity: .4; }
+  #mic .i-stop, #mic[aria-pressed="true"] .i-mic { display: none; }
+  #mic[aria-pressed="true"] .i-stop { display: block; }
+  #chat-hint { margin: 6px 0 0 8px; min-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .card { background: var(--card); border-radius: 14px; padding: 12px 14px; margin-top: 12px; }
+  .readings { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hairline); }
+  .readings > div + div { border-left: 1px solid var(--hairline); padding-left: 12px; }
+  .readings dt { color: var(--dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .readings dd { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.02em; }
+  .readings dd small { font-size: 12px; font-weight: 400; color: var(--dim); letter-spacing: 0; }
+  #co2::first-letter { text-transform: uppercase; }  /* the station's air level comes lowercase */
+  .stale .readings { opacity: .5; }
+
+  .controls { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+  .group { display: flex; gap: 8px; align-items: center; flex: none; }
+  .modes { display: inline-flex; border: 1px solid var(--hairline); border-radius: 10px; overflow: hidden; flex: none; }
+  .modes button + button { border-left: 1px solid var(--hairline); }
+  .modes button[aria-pressed="true"] { background: var(--raised); }
+  .modes button[data-mode="on"][aria-pressed="true"], .modes button[data-fan="on"][aria-pressed="true"] { background: var(--owl); color: var(--face-ink); }
+  .controls .label { color: var(--dim); font-size: 12px; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; border: 0; background: transparent; padding: 6px 13px; border-radius: 10px; }
+  .modes button { border-radius: 0; }
+  button:hover:not(:disabled) { background-color: rgba(255, 255, 255, .07); }
+  #mic:hover:not(:disabled) { background-color: #2e3037; }
+  #mic[aria-pressed="true"]:hover { background-color: var(--rec); }
+  button:disabled, input:disabled { cursor: default; opacity: .45; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  form { flex: 1; display: flex; gap: 8px; min-width: 0; }
+  input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--hairline); border-radius: 10px; background: var(--island); user-select: text; caret-color: var(--owl); }
+  input::placeholder { color: #7c818a; }
+  .send { background: var(--raised); }
+  #lcd-hint { margin-top: 8px; }
+
+  #setup ol { padding-left: 18px; }
+  #setup li + li { margin-top: 6px; }
+  code { font: 12px ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace; background: var(--island); border-radius: 4px; padding: 1px 5px; }
+  #addresses { margin-top: 10px; }
+
+  /* The owl. Its eyes follow the mouse and blink, its face follows its mood, its beak moves with
+     its voice (--mouth, 0 to 1), and it hops and flaps when its mood changes. */
+  .owl { display: block; overflow: visible; }
+  .owl .shape, .owl .zz { display: none; }
+  .owl:is([data-face="normal"], [data-face="wide"], [data-face="thinking"], [data-face="listening"]) .open,
+  .owl[data-face="happy"] .arc, .owl[data-face="sleepy"] .shut, .owl[data-face="dizzy"] .spiral, .owl[data-face="love"] .heart,
+  .owl[data-face="wink"] .eye-l .open, .owl[data-face="wink"] .eye-r .arc { display: inline; }
+  .owl .open, .owl .look, .owl .pupil, .owl .tuft, .owl .wing, .owl .mouth, .owl .spiral, .owl .all { transform-box: fill-box; }
+  .owl .open { transform-origin: center; transition: transform 70ms; }
+  .owl.blink .open { transform: scaleY(.12); }
+  .owl .look { transition: transform .25s var(--ease); }
+  .owl[data-face="thinking"] .look { transform: translate(-1.6px, -2.2px); }
+  .owl .pupil { transform-origin: center; transition: transform .2s var(--ease); }
+  .owl[data-face="wide"] .pupil { transform: scale(.6); }
+  .owl[data-face="listening"] .pupil { transform: scale(1.18); }
+  .owl .tuft { transition: transform .3s var(--ease); }
+  .owl .tuft-l { transform-origin: 85% 100%; }
+  .owl .tuft-r { transform-origin: 15% 100%; }
+  .owl:is([data-face="listening"], [data-face="wide"]) .tuft-l { transform: rotate(12deg); }
+  .owl:is([data-face="listening"], [data-face="wide"]) .tuft-r { transform: rotate(-12deg); }
+  .owl[data-face="sleepy"] .tuft-l { transform: rotate(-14deg); }
+  .owl[data-face="sleepy"] .tuft-r { transform: rotate(14deg); }
+  .owl .wing { transform-origin: 50% 0; }
+  .owl .cheek { opacity: 0; transition: opacity .3s; }
+  .owl:is([data-face="happy"], [data-face="love"], [data-face="wink"]) .cheek { opacity: .55; }
+  .owl .mouth { transform-origin: 50% 0; transform: scaleY(var(--mouth, 0)); }
+  .owl .jaw { transform: translateY(calc(var(--mouth, 0) * 2.4px)); }
+  .owl .spiral { transform-origin: center; animation: spin 1.4s linear infinite; }
+  .owl.big .all { transform-origin: 50% 100%; animation: breathe 5s ease-in-out infinite; }
+  .owl.big[data-face="sleepy"] .zz { display: inline; animation: zz 2.8s ease-in-out infinite; }
+  .owl.hop { animation: hop .38s var(--ease); }
+  .owl.hop .wing-l { animation: flap-l .38s var(--ease); }
+  .owl.hop .wing-r { animation: flap-r .38s var(--ease); }
+  @keyframes hop { 40% { transform: translateY(-8%); } }
+  @keyframes flap-l { 40% { transform: rotate(24deg); } }
+  @keyframes flap-r { 40% { transform: rotate(-24deg); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes breathe { 50% { transform: scale(1.012, 1.025); } }
+  @keyframes zz { 0% { opacity: 0; transform: translate(0, 2px); } 30%, 70% { opacity: 1; } 100% { opacity: 0; transform: translate(2px, -4px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    #island, .view { transition: none !important; }
+    .owl.hop, .owl.hop .wing, .owl.big .all, .owl .spiral, .owl .zz, .dots i { animation: none !important; }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<template id="owl">
+  <svg class="owl" viewBox="0 0 64 64" aria-hidden="true" data-face="normal">
+    <g class="all">
+      <path class="tuft tuft-l" d="M15 20Q10 10 8 3Q19 6 28 12Z" fill="var(--owl-dark)"/>
+      <path class="tuft tuft-r" d="M49 20Q54 10 56 3Q45 6 36 12Z" fill="var(--owl-dark)"/>
+      <path class="wing wing-l" d="M10 30C3.5 37 4.5 49 13.5 54 14.5 46 13.5 37 10 30Z" fill="var(--owl-dark)"/>
+      <path class="wing wing-r" d="M54 30C60.5 37 59.5 49 50.5 54 49.5 46 50.5 37 54 30Z" fill="var(--owl-dark)"/>
+      <path d="M32 9C47 9 56 20 56 35 56 50 46 60 32 60 18 60 8 50 8 35 8 20 17 9 32 9Z" fill="var(--owl)"/>
+      <ellipse cx="32" cy="47.5" rx="14" ry="10.5" fill="var(--belly)"/>
+      <path d="M24 45.5l2 2 2-2M30 45.5l2 2 2-2M36 45.5l2 2 2-2M27 50.5l2 2 2-2M33 50.5l2 2 2-2" fill="none" stroke="var(--owl-dark)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="60.2" rx="3.6" ry="1.8" fill="var(--beak)"/>
+      <ellipse cx="38" cy="60.2" rx="3.6" ry="1.8" fill="var(--beak)"/>
+      <circle cx="23" cy="28" r="11.5" fill="var(--face)"/>
+      <circle cx="41" cy="28" r="11.5" fill="var(--face)"/>
+      <ellipse class="cheek" cx="14.5" cy="37" rx="3.2" ry="1.9" fill="var(--blush)"/>
+      <ellipse class="cheek" cx="49.5" cy="37" rx="3.2" ry="1.9" fill="var(--blush)"/>
+      <g class="eye eye-l" transform="translate(23 28)">
+        <g class="shape open"><g class="gaze"><g class="look"><circle r="6.4" fill="var(--iris)"/><circle class="pupil" r="4.4" fill="var(--face-ink)"/><circle cx="1.9" cy="-2" r="1.6" fill="#fff"/></g></g></g>
+        <path class="shape arc" d="M-6 2Q0-6 6 2" fill="none" stroke="var(--face-ink)" stroke-width="2.4" stroke-linecap="round"/>
+        <path class="shape shut" d="M-6-.5Q0 4.5 6-.5" fill="none" stroke="var(--face-ink)" stroke-width="2.2" stroke-linecap="round"/>
+        <path class="shape heart" d="M0 5C-7.5-.5-5.5-7 0-3.4 5.5-7 7.5-.5 0 5Z" fill="var(--blush)"/>
+        <path class="shape spiral" d="M0 0a1.2 1.2 0 0 1 2.4 0 2.4 2.4 0 0 1-4.8 0 3.6 3.6 0 0 1 7.2 0 4.8 4.8 0 0 1-9.6 0" fill="none" stroke="var(--face-ink)" stroke-width="1.5" stroke-linecap="round"/>
+      </g>
+      <g class="eye eye-r" transform="translate(41 28)">
+        <g class="shape open"><g class="gaze"><g class="look"><circle r="6.4" fill="var(--iris)"/><circle class="pupil" r="4.4" fill="var(--face-ink)"/><circle cx="1.9" cy="-2" r="1.6" fill="#fff"/></g></g></g>
+        <path class="shape arc" d="M-6 2Q0-6 6 2" fill="none" stroke="var(--face-ink)" stroke-width="2.4" stroke-linecap="round"/>
+        <path class="shape shut" d="M-6-.5Q0 4.5 6-.5" fill="none" stroke="var(--face-ink)" stroke-width="2.2" stroke-linecap="round"/>
+        <path class="shape heart" d="M0 5C-7.5-.5-5.5-7 0-3.4 5.5-7 7.5-.5 0 5Z" fill="var(--blush)"/>
+        <path class="shape spiral" d="M0 0a1.2 1.2 0 0 1 2.4 0 2.4 2.4 0 0 1-4.8 0 3.6 3.6 0 0 1 7.2 0 4.8 4.8 0 0 1-9.6 0" fill="none" stroke="var(--face-ink)" stroke-width="1.5" stroke-linecap="round"/>
+      </g>
+      <ellipse class="mouth" cx="32" cy="37.6" rx="2.3" ry="2.6" fill="var(--mouth-in)"/>
+      <path class="jaw" d="M30.2 37.4h3.6L32 39.8Z" fill="var(--beak-dark)"/>
+      <path d="M28.2 33.4Q32 31.6 35.8 33.4L32 38.8Z" fill="var(--beak)"/>
+      <path class="zz" d="M50 13h3.5l-3.5 3.5h3.5M55.5 6h2.6l-2.6 2.6h2.6" fill="none" stroke="var(--dim)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>
+</template>
+
+<div id="island" data-state="hidden">
+  <div id="clip">
+    <div class="view" id="compact" title="Open StudySphere">
+      <span class="owl-slot"></span>
+      <span id="compact-text"></span>
+      <span class="lamp" title="Study lamp"></span>
+    </div>
+
+    <div class="view" id="expanded">
+      <div class="head">
+        <span class="owl-slot"></span>
+        <div class="speech">
+          <div class="bubble" id="bubble">
+            <p id="say" role="status"></p>
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+          <p id="status" class="dim"></p>
+        </div>
+        <div class="window-buttons">
+          <button id="minimize" title="Minimize" aria-label="Minimize">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.5 8h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </button>
+          <button id="quit" title="Quit StudySphere">Quit</button>
+        </div>
+      </div>
+
+      <form class="chat" id="chat">
+        <button type="button" class="icon" id="mic" aria-pressed="false" aria-label="Talk to the owl" title="Talk to the owl">
+          <svg class="i-mic" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="7" y="2.5" width="6" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg class="i-stop" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="2" fill="currentColor"/></svg>
+        </button>
+        <input id="chat-text" autocomplete="off" aria-label="Message for the owl" placeholder="Talk to the owl or type here">
+        <button type="submit" class="icon" id="chat-send" aria-label="Send to the owl" title="Send">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 15.5v-11M5.5 9 10 4.5 14.5 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+      <p class="hint" id="chat-hint"></p>
+
+      <div class="card" id="setup">
+        <ol>
+          <li><strong>WireLab:</strong> open the utsuas project and press Run. In the simulator, <code>config.h</code> already points the node at <code>127.0.0.1</code>.</li>
+          <li><strong>Real ESP32:</strong> on the same WiFi as this laptop, set <code>MQTT_HOST</code> in <code>config.h</code> to this laptop's address there, then upload.</li>
+        </ol>
+        <p class="hint" id="addresses"></p>
+      </div>
+
+      <div id="room" hidden>
+        <dl class="readings">
+          <div><dt>Temperature</dt><dd id="temperature">--</dd></div>
+          <div><dt>Humidity</dt><dd id="humidity">--</dd></div>
+          <div><dt>Light</dt><dd id="lighting">--</dd></div>
+          <div><dt id="air-label">CO2</dt><dd id="co2">--</dd></div>
+          <div id="presence-card" hidden><dt id="presence-label">Person</dt><dd id="presence">--</dd></div>
+        </dl>
+        <div class="controls" id="station-controls" hidden>
+          <span class="group">
+            <span class="label">Fan</span>
+            <span class="modes" role="group" aria-label="Fan">
+              <button data-fan="auto" aria-pressed="false" title="On at 30 °C and above, off again at 29 °C">Auto</button>
+              <button data-fan="on" aria-pressed="false">On</button>
+              <button data-fan="off" aria-pressed="false">Off</button>
+            </span>
+          </span>
+          <span class="group">
+            <span class="label">Vent</span>
+            <!-- Servo angles for the vent; match them to how the flap is mounted. -->
+            <span class="modes" role="group" aria-label="Vent">
+              <button data-vent="180" aria-pressed="false" title="Servo to 180°">Open</button>
+              <button data-vent="0" aria-pressed="false" title="Servo to 0°">Closed</button>
+            </span>
+          </span>
+        </div>
+        <div class="controls">
+          <span class="group" id="lamp-group">
+            <span class="label">Lamp</span>
+            <span class="modes" role="group" aria-label="Study lamp">
+              <button data-mode="auto" aria-pressed="false" title="On while someone is in the room and it is darker than 150 lux">Auto</button>
+              <button data-mode="on" aria-pressed="false">On</button>
+              <button data-mode="off" aria-pressed="false">Off</button>
+            </span>
+          </span>
+          <span class="label">LCD</span>
+          <form id="lcd-form">
+            <input id="lcd-text" maxlength="32" autocomplete="off" aria-label="Message for the LCD" placeholder="Message, up to 32 characters">
+            <button class="send" type="submit">Send</button>
+          </form>
+        </div>
+        <p class="hint" id="lcd-hint">Shown on the LCD for 30 seconds.</p>
+        <p class="hint" id="broker" style="margin-top: 6px"></p>
+      </div>
+    </div>
+
+    <div class="view" id="mini" title="Open StudySphere"><span class="owl-slot"></span></div>
+  </div>
+</div>
+
+<script>
+  const { invoke } = window.__TAURI__.core;
+  const { listen } = window.__TAURI__.event;
+  const $ = (id) => document.getElementById(id);
+  const island = $('island'), expanded = $('expanded');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const SILENT_MS = 15000;  // the node sends telemetry, or answers a request, every 5 s
+  const ASK_MS = 5000;      // the station sketch only reads its sensors when asked
+  // Light comes from the LDR module on the UNO (mh_sensor), not a BH1750 lux meter.
+  const ASK = ['temperature', 'humidity', 'mh_sensor', 'air_quality', 'occupancy'];
+  // The HC-SR04 misses a still person now and then: a study session only ends after this long
+  // with nobody in front of it. The Person card shows the latest reading as it is.
+  const AWAY_MS = 30000;
+  // The station's fan only runs on command, so the app switches it. Auto: on at FAN_ON_C, off
+  // again at FAN_OFF_C (the gap keeps it from flapping; tune both to the room). On/Off override it.
+  const FAN_ON_C = 30, FAN_OFF_C = 29;
+  const FAN_RESEND_MS = 60000;  // re-sent this often: a UNO reset or a missed command turns the fan off
+  const EAR = 10;           // the inverted corners stick out this far on each side
+  const SIZES = { hidden: [52, 30], compact: [300, 36] };  // expanded: 560 wide, as tall as its content
+  const COLLAPSE_MS = { expanded: 8000, compact: 20000 };  // after the mouse leaves
+
+  // Talking with the owl. Speech-to-text and the voice are Groq's; the chat model is whatever
+  // STUDYSPHERE_LLM_URL points at (Groq until the fine-tuned model runs on Ollama).
+  const GROQ = 'https://api.groq.com/openai/v1';
+  const STT_MODEL = 'whisper-large-v3-turbo';
+  // Orpheus only has English voices, but Whisper reads its Indonesian back word for word.
+  const VOICE = { model: 'canopylabs/orpheus-v1-english', voice: 'hannah' };
+  const QUIET_MS = 1300;        // listening ends this long after you stop talking
+  const LISTEN_MAX_MS = 30000;  // the longest thing you can tell the owl
+  const WAIT_MS = 7000;         // how long it waits for you to start
+  // ponytail: speech is VOICE_RATIO times louder than the room's noise floor, the quietest moment
+  // of the last 2.5 s (the gaps between words count, so a fan or music raises it too). Raise
+  // VOICE_RATIO if room noise keeps it busy, lower VOICE_MIN for a quiet mic.
+  const VOICE_RATIO = 3, VOICE_MIN = 0.012, FLOOR_CHUNKS = 30;
+  const SAY_MS = 9000;          // a reply stays in the bubble at least this long
+  const HISTORY = 10;           // messages the owl remembers
+  // The owl speaks up unasked when the room gets this bad, and again every REMIND_MS while it lasts.
+  const HOT_C = 32;
+  const REMIND_MS = 10 * 60000;
+
+  let state = 'hidden', hovering = false, collapseTimer, shrinkTimer, win = { w: 0, h: 0 };
+  let base = null, room = '', lastSeen = 0, t = null, silentShown = false, station = false, asked = 0;
+  let fan = null, vent = null;  // as the station last reported them
+  let fanMode = 'auto', fanSent = null, fanSentAt = 0;
+  let lastPresent = 0, sessionStart = 0;
+  let info = { connected: false, ownBroker: true, addresses: [], port: 1883, ai: { groqKeys: [], llmUrl: GROQ } };
+  let talk = null;    // 'listening', 'thinking' or 'speaking'
+  let said = null;    // the owl's last reply: { text, face, until }
+  let history = [];   // the conversation, for the chat model
+  let audioCtx = null, voiceOut = null, rec = null, deafUntil = 0;
+  const warned = new Map();  // alarm → when the owl last spoke up about it
+
+  // ── The island: hidden (a small owl at the top edge), compact (one line), expanded ────────────
+
+  function shape() {
+    const [w, h] = state === 'expanded' ? [560, Math.ceil(expanded.offsetHeight)] : SIZES[state];
+    const W = w + 2 * EAR;
+    // Grow the window first and shrink it after the animation, so the island is never cut off.
+    win = { w: Math.max(win.w, W), h: Math.max(win.h, h) };
+    invoke('resize', win);
+    island.style.width = w + 'px';
+    island.style.height = h + 'px';
+    clearTimeout(shrinkTimer);
+    shrinkTimer = setTimeout(() => { win = { w: W, h }; invoke('resize', win); }, reduced ? 0 : 320);
+  }
+
+  function go(next) {
+    if (next !== state) {
+      state = next;
+      island.dataset.state = next;
+      shape();
+    }
+    arm();
+  }
+
+  // Stays open while the mouse is on it, something in it has keyboard focus, or the owl is talking.
+  const held = () => hovering || !!talk || !!island.querySelector(':focus-visible');
+
+  function arm() {
+    clearTimeout(collapseTimer);
+    if (state === 'hidden' || held()) return;
+    collapseTimer = setTimeout(() => go(state === 'expanded' ? 'compact' : 'hidden'), COLLAPSE_MS[state]);
+  }
+
+  const reveal = () => { if (state === 'hidden') go('compact'); };
+  const attention = () => go('expanded');
+
+  document.documentElement.addEventListener('mouseenter', () => { hovering = true; clearTimeout(collapseTimer); reveal(); });
+  const pointerLeft = () => { hovering = false; look(null); arm(); };
+  document.documentElement.addEventListener('mouseleave', pointerLeft);
+  $('compact').addEventListener('click', () => go('expanded'));
+  $('mini').addEventListener('click', () => go('expanded'));
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (rec) return void (stopListening(false), defaultHint());   // never mind
+    if (talk === 'speaking') return voiceOut?.stop();
+    document.activeElement?.blur();
+    go('compact');
+  });
+  // Clicking another window leaves nothing focused here, so the island can tuck itself away.
+  window.addEventListener('blur', () => { document.activeElement?.blur(); arm(); });
+  island.addEventListener('focusout', () => setTimeout(arm));
+  new ResizeObserver(() => { if (state === 'expanded') shape(); }).observe(expanded);
+
+  // ── The owl ────────────────────────────────────────────────────────────────────────────────
+
+  for (const slot of document.querySelectorAll('.owl-slot')) slot.replaceWith($('owl').content.cloneNode(true));
+  const owls = [...document.querySelectorAll('.owl')];
+  const bigOwl = owls[1];
+  bigOwl.classList.add('big');
+
+  const FACES = ['normal', 'happy', 'sleepy', 'dizzy', 'wide', 'love', 'wink', 'thinking', 'listening'];
+  const OPEN = new Set(['normal', 'wide', 'thinking', 'listening']);  // faces with eyes that can blink
+  let face = null, override = null, overrideTimer;
+
+  function setFace(name) {
+    if (name === face) return;
+    const hop = face !== null && !reduced;
+    face = name;
+    for (const owl of owls) {
+      owl.dataset.face = name;
+      if (hop) {
+        owl.classList.remove('hop');
+        void owl.getBBox();
+        owl.classList.add('hop');
+      }
+    }
+  }
+
+  // A face for a moment (ms), or until cleared with null.
+  function flash(name, ms) {
+    override = name;
+    clearTimeout(overrideTimer);
+    if (ms) overrideTimer = setTimeout(() => { override = null; render(); }, ms);
+    render();
+  }
+
+  function blink() {
+    if (!reduced && OPEN.has(face)) {
+      for (const owl of owls) owl.classList.add('blink');
+      setTimeout(() => owls.forEach((o) => o.classList.remove('blink')), 130);
+    }
+    setTimeout(blink, 2500 + Math.random() * 4000);
+  }
+
+  // The eyes turn toward the mouse while it is over the island.
+  function look(e) {
+    for (const owl of owls) {
+      const r = owl.getBoundingClientRect();
+      const dx = e ? Math.tanh((e.clientX - r.left - r.width / 2) / 120) * 1.8 : 0;
+      const dy = e ? Math.tanh((e.clientY - r.top - r.height / 2) / 80) * 1.4 : 0;
+      for (const g of owl.querySelectorAll('.gaze')) g.setAttribute('transform', `translate(${dx.toFixed(2)} ${dy.toFixed(2)})`);
+    }
+  }
+  document.addEventListener('mousemove', look);
+  bigOwl.addEventListener('mouseenter', () => flash('love'));
+  bigOwl.addEventListener('mouseleave', () => flash(null));
+
+  const mouth = (open) => owls.forEach((o) => o.style.setProperty('--mouth', open.toFixed(2)));
+  const loudness = (wave) => Math.sqrt(wave.reduce((s, v) => s + v * v, 0) / wave.length);
+
+  // ── The room ───────────────────────────────────────────────────────────────────────────────
+
+  const fmt = (n, digits = 0) => n == null ? '--' : n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+  function duration(s) {
+    const m = Math.floor(s / 60);
+    return m < 1 ? 'under a minute' : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`;
+  }
+
+  // What the owl thinks of the room: its face, what it says, and the compact line.
+  function mood() {
+    if (!lastSeen) return { face: 'normal', say: "Hi! I'm waiting for the room node.", line: 'Waiting for the room node' };
+    const quiet = Date.now() - lastSeen;
+    if (quiet > SILENT_MS) {
+      return { face: 'wide', warn: true, say: `I haven't heard from ${room} for ${Math.round(quiet / 1000)} s. Is the node still on?`, line: 'Room node offline' };
+    }
+    const air = station ? t.air ?? '--' : `${fmt(t.co2)} ppm`;
+    if (t.air_quality === 'stale') {
+      return { face: 'dizzy', warn: true, say: `The air is stale (${air}). Open a window?`, line: `${station ? 'Air' : 'CO2'} ${air} · open a window` };
+    }
+    const line = `${fmt(t.temperature, 1)}°C · ${fmt(t.humidity)}% · ${air}`;
+    if (station && t.occupancy == null) return { face: 'normal', say: "The room looks fine. I'll keep watch.", line };
+    if (t.occupancy) return { face: 'happy', say: `You've been studying for ${duration(t.session_duration || 0)}. Keep going!`, line };
+    return { face: 'sleepy', say: "The room is empty. I'll keep watch.", line };
+  }
+
+  function setText(id, text) {
+    if ($(id).textContent !== text) $(id).textContent = text;
+  }
+
+  // Next to a missing value: why the station couldn't read it.
+  const WHY = { sensor_error: 'no sensor', arduino_offline: 'UNO offline', budget: 'skipped' };
+  const why = (k) => station && t.missing?.[k] ? WHY[t.missing[k]] ?? t.missing[k] : '';
+
+  function reading(id, value, unit, note = '') {
+    const el = $(id);
+    el.textContent = value;
+    const small = value === '--' ? note : unit;
+    if (small) el.append(' ', Object.assign(document.createElement('small'), { textContent: small }));
+  }
+
+  function brokerText() {
+    const where = info.ownBroker ? 'built in to this app' : 'already running on this laptop';
+    return info.connected
+      ? `MQTT broker on port ${info.port}, ${where}.`
+      : `Can't reach the MQTT broker on port ${info.port} (${where}). Close other programs using that port, or restart the app.`;
+  }
+
+  const online = () => lastSeen > 0 && Date.now() - lastSeen <= SILENT_MS;
+
+  function render() {
+    const m = mood(), seen = lastSeen > 0, silent = seen && !online();
+    const reply = said && Date.now() < said.until ? said : null;
+    setFace(override || (talk === 'listening' || talk === 'thinking' ? talk : reply?.face) || m.face);
+    setText('say', talk === 'listening' ? "I'm listening." : reply ? reply.text : m.say);
+    $('say').classList.toggle('warn', !talk && !reply && !!m.warn);
+    $('bubble').classList.toggle('thinking', talk === 'thinking');
+    setText('compact-text', reply ? reply.text : m.line);
+    $('compact-text').classList.toggle('warn', !reply && !!m.warn);
+    const fanText = station && fan != null ? ` · fan ${fan ? 'on' : 'off'}` : '';
+    setText('status', seen ? `${room} · ${silent ? 'offline' : 'online'}${fanText}` : brokerText());
+    const ips = info.addresses.map((a) => `${a.ip} (${a.name})`).join(', ');
+    setText('addresses', ips ? `This laptop: ${ips}.` : 'This laptop has no network address right now.');
+    setText('broker', brokerText() + (ips ? ` This laptop: ${ips}.` : ''));
+    $('setup').hidden = seen;
+    $('room').hidden = !seen;
+    $('room').classList.toggle('stale', silent);
+    $('compact').classList.toggle('lamp-on', station ? fan === true : t?.lamp === 'on');
+    $('lamp-group').hidden = station;  // the station has a fan and a vent, no lamp
+    document.querySelector('#compact .lamp').title = station ? 'Fan' : 'Study lamp';
+    for (const b of document.querySelectorAll('[data-mode], [data-fan], [data-vent], .send')) b.disabled = !seen || silent;
+    $('station-controls').hidden = !station;
+    for (const b of document.querySelectorAll('[data-fan]')) b.setAttribute('aria-pressed', b.dataset.fan === fanMode);
+    for (const b of document.querySelectorAll('[data-vent]')) b.setAttribute('aria-pressed', +b.dataset.vent === vent);
+    $('mic').setAttribute('aria-pressed', talk === 'listening');
+  }
+
+  function showReadings() {
+    reading('temperature', fmt(t.temperature, 1), '°C', why('temperature'));
+    reading('humidity', fmt(t.humidity), '%', why('humidity'));
+    // The LDR's digital output: brighter than the threshold set on the module's potentiometer.
+    if (station) reading('lighting', t.bright == null ? '--' : t.bright ? 'Bright' : 'Dark', '', why('mh_sensor'));
+    else reading('lighting', fmt(t.lighting), 'lux');
+    setText('air-label', station ? 'Air' : 'CO2');
+    if (station) reading('co2', t.air ?? '--', '', why('air_quality'));  // MQ-135 level, not ppm
+    else reading('co2', fmt(t.co2), 'ppm');
+    $('co2').classList.toggle('warn', t.air_quality === 'stale');
+    $('presence-card').hidden = !station;
+    if (station) {
+      setText('presence-label', t.distance_cm != null ? `Person · ${t.distance_cm} cm` : 'Person');
+      reading('presence', t.here == null ? '--' : t.here ? 'Present' : 'Absent', '', why('occupancy'));
+    }
+    for (const b of document.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', b.dataset.mode === t.lamp_mode);
+  }
+
+  // A station answer only carries what was asked for; the rest stays from earlier answers.
+  function fromStation({ data: d, missing = {} }) {
+    const next = { ...t, missing };
+    for (const k of ['temperature', 'humidity', 'lighting']) if (d[k] != null) next[k] = d[k];
+    const aq = d.air_quality;
+    if (aq) Object.assign(next, { air: aq.level, air_quality: aq.level === 'poor' || aq.alarm ? 'stale' : 'fresh' });
+    if (d.mh_sensor) next.bright = d.mh_sensor.triggered;
+    if (d.occupancy) {
+      const now = Date.now();
+      if (d.occupancy.present) {
+        if (!t?.occupancy) sessionStart = now;
+        lastPresent = now;
+      }
+      next.occupancy = now - lastPresent < AWAY_MS;
+      next.here = d.occupancy.present;              // this reading; occupancy above is the session
+      next.distance_cm = d.occupancy.distance_cm;  // absent when the ping got no echo
+      next.session_duration = next.occupancy ? (now - sessionStart) / 1000 : 0;
+    }
+    return next;
+  }
+
+  const ask = () => invoke('publish', {
+    topic: base + 'req',
+    payload: JSON.stringify({ id: `desktop-${++asked}`, task: 'desktop_monitor', required_information: ASK }),
+  }).catch(() => {});
+
+  function driveFan() {
+    let want;
+    if (fanMode !== 'auto') want = fanMode === 'on';
+    else {
+      const c = t?.temperature;
+      if (c == null) return;
+      want = c >= FAN_ON_C ? true : c <= FAN_OFF_C ? false : fanSent ?? false;
+    }
+    if (want === fanSent && Date.now() - fanSentAt < FAN_RESEND_MS) return;
+    fanSent = want;
+    fanSentAt = Date.now();
+    send({ fan: want }).catch(() => {});
+  }
+
+  // firmware/ sends telemetry on its own. The station sketch ("alatnya cu/") keeps a retained
+  // state and answers requests on resp (stream when streaming is on), so it gets asked.
+  function onMessage(topic, json) {
+    const kind = topic.slice(topic.lastIndexOf('/') + 1);
+    if (kind === 'state' && !station) {
+      station = true;
+      base = topic.slice(0, -kind.length);
+      ask();
+    }
+    let m;
+    try { m = JSON.parse(json); } catch { return; }
+    if (kind === 'state' && typeof m.fan === 'boolean') {
+      fan = m.fan;
+      vent = m.vent;
+      render();
+      return;
+    }
+    let next;
+    if (kind === 'telemetry') next = m;
+    else if ((kind === 'resp' || kind === 'stream') && m.data) next = fromStation(m);
+    else return;
+    const prev = t;
+    base = topic.slice(0, -kind.length);  // TOPIC_ROOT/DEVICE_ID/
+    room = topic.split('/')[1];
+    lastSeen = Date.now();
+    silentShown = false;
+    t = next;
+    if (station) driveFan();
+    showReadings();
+    render();
+    // Stale air needs doing something about: open up. Other news only peeks out.
+    if (t.air_quality === 'stale' && prev?.air_quality !== 'stale') attention();
+    else if (!prev || t.lamp !== prev.lamp || t.occupancy !== prev.occupancy) reveal();
+  }
+
+  function tick() {
+    render();
+    if (lastSeen && Date.now() - lastSeen > SILENT_MS && !silentShown) {
+      silentShown = true;
+      attention();
+    }
+    checkAlarms();
+  }
+
+  // ── Commands, from the buttons or from the owl ─────────────────────────────────────────────
+
+  const send = (command) => invoke('publish', { topic: base + (station ? 'cmd' : 'command'), payload: JSON.stringify(command) });
+
+  // The node confirms with fresh telemetry, which presses the button.
+  const setLamp = (mode) => send({ lamp: mode }).then(() => flash('wink', 1200));
+  // The station confirms both on its state topic, which updates the status line and the vent.
+  const setVent = (angle) => send({ vent: angle }).then(() => flash('wink', 1200));
+  function setFan(mode) {
+    fanMode = mode;
+    fanSentAt = 0;  // send now, even if the fan should already be that way
+    driveFan();
+    render();
+    flash('wink', 1200);
+  }
+  // The station takes the LCD's two 16-character rows.
+  const sendLcd = (text) => send(station ? { lcd: [text.slice(0, 16), text.slice(16, 32)], lcd_ms: 30000 } : { lcd: text });
+
+  for (const b of document.querySelectorAll('[data-mode]')) b.addEventListener('click', () => setLamp(b.dataset.mode));
+  for (const b of document.querySelectorAll('[data-fan]')) b.addEventListener('click', () => setFan(b.dataset.fan));
+  for (const b of document.querySelectorAll('[data-vent]')) b.addEventListener('click', () => setVent(+b.dataset.vent));
+
+  $('lcd-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = $('lcd-text').value.trim();
+    if (!text) return;
+    try {
+      await sendLcd(text);
+      $('lcd-text').value = '';
+      $('lcd-text').blur();  // done typing: the island may tuck away again
+      $('lcd-hint').textContent = `Sent "${text}" to the LCD.`;
+      flash('wink', 1200);
+    } catch (err) {
+      $('lcd-hint').textContent = `Not sent: ${err}`;
+    }
+  });
+
+  $('quit').addEventListener('click', () => invoke('quit'));
+  // Down to the small owl at the top edge; pointing at it or clicking it brings the island back.
+  $('minimize').addEventListener('click', () => { document.activeElement?.blur(); go('hidden'); });
+
+  // ── Talking with the owl ───────────────────────────────────────────────────────────────────
+
+  const hint = (text, warn = false) => {
+    $('chat-hint').textContent = text;
+    $('chat-hint').classList.toggle('warn', warn);
+  };
+  const voice = () => info.ai.groqKeys.length > 0;
+  const llmKeys = () => info.ai.llmKey ? [info.ai.llmKey] : info.ai.llmUrl.startsWith(GROQ) ? info.ai.groqKeys : [];
+  const audio = () => (audioCtx ??= new AudioContext());
+
+  // Tries each key until one works (a key's org has to accept each model's terms), and starts
+  // with the one that worked last time.
+  const goodKey = new Map();
+  async function call(url, init, keys) {
+    const good = goodKey.get(url);
+    const order = good ? [good, ...keys.filter((k) => k !== good)] : keys.length ? keys : [null];
+    let error;
+    for (const key of order) {
+      const res = await fetch(url, { ...init, headers: { ...init.headers, ...(key && { Authorization: `Bearer ${key}` }) } });
+      if (res.ok) {
+        if (key) goodKey.set(url, key);
+        return res;
+      }
+      const body = await res.json().catch(() => null);
+      error = new Error(body?.error?.message ?? `${res.status} ${res.statusText}`);
+    }
+    throw error;
+  }
+
+  const COMMANDS = {
+    node: `"lamp": "auto" | "on" | "off" (the study lamp; auto turns it on while someone is in the room and it is darker than 150 lux), "lcd": "<at most 32 characters>" (shown on the room's LCD for 30 seconds)`,
+    station: `"fan": "auto" | "on" | "off" (auto: on from ${FAN_ON_C} °C, off again at ${FAN_OFF_C} °C), "vent": "open" | "closed", "lcd": "<at most 32 characters>" (shown on the station's LCD for 30 seconds)`,
+  };
+
+  function roomFacts() {
+    if (!lastSeen) return 'No room node has connected yet, so you have no readings and cannot change anything in the room.';
+    const age = Math.round((Date.now() - lastSeen) / 1000);
+    const late = online() ? '' : ` The node has gone quiet: these are out of date and commands won't reach it.`;
+    const extra = station ? {
+      fan: fan == null ? 'unknown' : fan ? 'on' : 'off', fan_mode: fanMode, vent: vent == null ? 'unknown' : vent > 90 ? 'open' : 'closed',
+    } : {};
+    const legend = station
+      ? '\nbright: the light sensor says bright (false = dark). air: the MQ-135 air level. here: someone is in front of the desk right now. occupancy: a study session is running. session_duration: seconds. missing: what the station could not read and why.'
+      : '\nsession_duration: seconds since the study session started. co2: ppm, estimated by an MQ-135.';
+    return `Room "${room}", readings from ${age} s ago.${late}\n${JSON.stringify({ ...t, ...extra })}${legend}`;
+  }
+
+  function prompt() {
+    return `You are the owl who looks after a StudySphere smart study room. You live in a small island at the top of the student's screen, keep an eye on the room and chat with the student. Be warm, brief and a little playful.
+Answer with one JSON object and nothing else:
+{"say": "...", "mood": "...", "command": {...} or null}
+say: what you say out loud, at most two short sentences, in the language the student used. It is read by text-to-speech, so no emoji, lists or markdown; round readings to whole numbers and write units as words in that language (28 derajat, 60 persen).
+mood: your face, one of happy, normal, sleepy, dizzy, wide, love, wink, thinking.
+command: what to change in the room, or null. Only these keys and values: ${station ? COMMANDS.station : COMMANDS.node}. Only send a command when the student asks for a change, and say what you changed.
+A message that starts with [alert] comes from the room's sensors, not the student: pass the warning on, briefly and kindly, look dizzy or wide, and send no command.
+Only use the facts below; never make up a reading. If something is not measured, say so.
+Now: ${new Date().toLocaleString()}.
+${roomFacts()}`;
+  }
+
+  async function think(messages) {
+    const res = await call(info.ai.llmUrl + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: info.ai.llmModel, messages, temperature: 0.5, response_format: { type: 'json_object' },
+        ...(info.ai.llmModel.startsWith('openai/gpt-oss') && { reasoning_effort: 'low' }),
+      }),
+    }, llmKeys());
+    return (await res.json()).choices[0].message.content;
+  }
+
+  function parse(raw) {
+    let r;
+    try { r = JSON.parse(raw); } catch { r = { say: raw }; }
+    const say = String(r?.say ?? '').trim();
+    return { say: say || 'Hmm?', mood: FACES.includes(r?.mood) ? r.mood : 'happy', command: r?.command };
+  }
+
+  // The model's command goes to the node only as one of the values the buttons send.
+  function act(c) {
+    if (!c || typeof c !== 'object' || !online()) return;
+    const modes = ['auto', 'on', 'off'];
+    if (!station && modes.includes(c.lamp)) setLamp(c.lamp).catch(() => {});
+    if (station && modes.includes(c.fan)) setFan(c.fan);
+    if (station && (c.vent === 'open' || c.vent === 'closed')) setVent(c.vent === 'open' ? 180 : 0).catch(() => {});
+    if (typeof c.lcd === 'string' && c.lcd.trim()) sendLcd(c.lcd.trim().slice(0, 32)).catch(() => {});
+  }
+
+  function setTalk(next) {
+    talk = next;
+    render();
+    if (!talk) arm();
+  }
+
+  function sayReply(text, face) {
+    said = { text, face, until: Date.now() + Math.max(SAY_MS, text.length * 80) };
+    render();
+  }
+
+  const canChat = () => llmKeys().length > 0 || !info.ai.llmUrl.startsWith(GROQ);
+
+  // You said something to the owl, typed or out loud.
+  function converse(text) {
+    text = text.trim();
+    if (!text || talk) return;
+    hint(`You: “${text}”`);
+    respond({ role: 'user', content: text }, "I couldn't think that through. Is the internet on?");
+  }
+
+  // The room got bad enough for the owl to say so unasked. The language goes in the message:
+  // the model keeps to it there, not in the system prompt.
+  function warn(facts) {
+    attention();
+    if (!canChat()) return sayReply(facts, 'dizzy');
+    const talked = history.some((m) => m.role === 'user' && !m.content.startsWith('[alert]'));
+    const lang = talked ? "the language of the student's last message" : 'Bahasa Indonesia';
+    respond({ role: 'user', content: `[alert] ${facts} Say it in ${lang}.` }, facts);
+  }
+
+  async function respond(message, fallback) {
+    history = [...history, message].slice(-HISTORY);
+    setTalk('thinking');
+    let reply, ok = true;
+    try {
+      const raw = await think([{ role: 'system', content: prompt() }, ...history]);
+      history.push({ role: 'assistant', content: raw });
+      reply = parse(raw);
+      act(reply.command);
+    } catch (e) {
+      ok = false;
+      reply = { say: fallback, mood: 'dizzy' };
+      hint(`Chat model: ${e.message}`, true);
+    }
+    sayReply(reply.say, reply.mood);
+    if (ok && voice()) {
+      setTalk('speaking');
+      await speak(reply.say).catch((e) => hint(`Voice: ${e.message}`, true));
+      deafUntil = Date.now() + 400;  // the room's echo of its own voice
+    }
+    setTalk(null);
+  }
+
+  // What is bad enough to speak up about, with what to do about it (left to the model, it once
+  // said to turn the fan off in the heat). Stale air is what makes the owl dizzy.
+  function alarms() {
+    if (!online()) return [];
+    const list = [], c = Math.round(t.temperature);
+    if (t.air_quality === 'stale') {
+      list.push({ key: 'air', facts: station
+        ? `The air is stale (the MQ-135 level is ${t.air}): the student should open a window or the vent.`
+        : `The air is stale (CO2 ${fmt(t.co2)} ppm): the student should open a window.` });
+    }
+    if (t.temperature >= HOT_C) {
+      list.push({ key: 'hot', facts: station
+        ? `It is ${c} °C: the fan should be on and the vent open.`
+        : `It is ${c} °C: the student should open a window, turn on a fan or take a break somewhere cooler.` });
+    }
+    return list;
+  }
+
+  function checkAlarms() {
+    if (talk) return;  // it speaks up once it is done talking
+    const now = Date.now();
+    const due = alarms().filter((a) => now - (warned.get(a.key) ?? 0) > REMIND_MS);
+    if (!due.length) return;
+    for (const a of due) warned.set(a.key, now);
+    warn(due.map((a) => a.facts).join(' '));
+  }
+
+  async function speak(text) {
+    const res = await call(GROQ + '/audio/speech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...VOICE, input: text.slice(0, 300), response_format: 'wav' }),
+    }, info.ai.groqKeys);
+    const ctx = audio();
+    const src = ctx.createBufferSource(), meter = ctx.createAnalyser();
+    src.buffer = await ctx.decodeAudioData(await res.arrayBuffer());
+    meter.fftSize = 1024;
+    src.connect(meter).connect(ctx.destination);
+    const wave = new Float32Array(meter.fftSize);
+    let playing = true;
+    const move = () => {  // the beak opens as wide as the voice is loud
+      if (!playing) return;
+      meter.getFloatTimeDomainData(wave);
+      mouth(Math.min(1, loudness(wave) * 5));
+      requestAnimationFrame(move);
+    };
+    voiceOut = src;
+    await new Promise((done) => {
+      src.onended = done;
+      src.start();
+      move();
+    });
+    playing = false;
+    voiceOut = null;
+    mouth(0);
+  }
+
+  // Two soft falling notes, "hoo-hoo": the owl is listening. The shortcut may come while the
+  // island is tucked away, so this says so out loud.
+  function hoot() {
+    const ctx = audio(), at = ctx.currentTime;
+    for (const [delay, hz] of [[0, 520], [0.2, 430]]) {
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.frequency.setValueAtTime(hz, at + delay);
+      osc.frequency.exponentialRampToValueAtTime(hz * 0.85, at + delay + 0.16);
+      gain.gain.setValueAtTime(0.0001, at + delay);
+      gain.gain.exponentialRampToValueAtTime(0.2, at + delay + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + delay + 0.17);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(at + delay);
+      osc.stop(at + delay + 0.2);
+    }
+    deafUntil = Date.now() + 550;
+  }
+
+  // ── Listening ───────────────────────────────────────────────────────────────────────────────
+  // Starts on the mic button or the shortcut, and stops by itself once you have spoken and gone
+  // quiet, or on the next press. Recorded as 16-bit mono WAV through Web Audio, since
+  // MediaRecorder's formats differ per webview. The mic is only open while it listens.
+
+  async function startListening() {
+    if (talk || rec) return;
+    const ctx = audio();
+    ctx.resume();
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      hint(`No microphone: ${e.message}`, true);
+      return;
+    }
+    const src = ctx.createMediaStreamSource(stream), tap = ctx.createScriptProcessor(4096, 1, 1);
+    const r = rec = { stream, src, tap, chunks: [], levels: [], start: Date.now(), last: 0 };
+    tap.onaudioprocess = (e) => hear(r, e.inputBuffer.getChannelData(0));
+    src.connect(tap);
+    tap.connect(ctx.destination);  // a ScriptProcessor only runs while connected; it outputs silence
+    attention();
+    hoot();
+    setTalk('listening');
+    hint(`Listening. Stop talking, or press ${info.shortcut ? info.shortcut + ' or ' : ''}the mic to send; Esc cancels.`);
+  }
+
+  function hear(r, d) {
+    const now = Date.now();
+    if (rec !== r || now < deafUntil) return;  // over, or its own hoot
+    r.chunks.push(d.slice());
+    const level = loudness(d);
+    r.levels = [...r.levels.slice(1 - FLOOR_CHUNKS), level];
+    if (level > Math.max(VOICE_MIN, Math.min(...r.levels) * VOICE_RATIO)) r.last = now;
+    $('mic').style.setProperty('--level', Math.min(1, level * 8).toFixed(2));
+    if (r.last ? now - r.last > QUIET_MS || now - r.start > LISTEN_MAX_MS : now - r.start > WAIT_MS) {
+      stopListening(!!r.last);
+      if (!r.last) hint(`I didn't hear anything. Press ${info.shortcut ? info.shortcut + ' or ' : ''}the mic to try again.`);
+    }
+  }
+
+  // Sends what it heard to Whisper and on to the owl, or (send false) drops it.
+  function stopListening(send) {
+    const r = rec;
+    if (!r) return;
+    rec = null;
+    r.src.disconnect();
+    r.tap.disconnect();
+    r.stream.getTracks().forEach((track) => track.stop());
+    $('mic').style.setProperty('--level', 0);
+    setTalk(null);
+    if (!send) return;
+    setTalk('thinking');
+    transcribe(wav(r.chunks, audio().sampleRate)).then((text) => {
+      setTalk(null);
+      if (text) converse(text);
+      else hint("I didn't catch that. Try again?");
+    }, (e) => {
+      setTalk(null);
+      hint(`Speech to text: ${e.message}`, true);
+    });
+  }
+
+  async function transcribe(file) {
+    const form = new FormData();
+    form.append('file', file, 'speech.wav');
+    form.append('model', STT_MODEL);
+    form.append('prompt', 'StudySphere, LCD, CO2');  // words it should spell this way
+    const res = await call(GROQ + '/audio/transcriptions', { method: 'POST', body: form }, info.ai.groqKeys);
+    return (await res.json()).text?.trim() ?? '';
+  }
+
+  function wav(chunks, rate) {
+    const n = chunks.reduce((sum, c) => sum + c.length, 0);
+    const v = new DataView(new ArrayBuffer(44 + n * 2));
+    const ascii = (at, s) => [...s].forEach((ch, i) => v.setUint8(at + i, ch.charCodeAt(0)));
+    ascii(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); ascii(8, 'WAVEfmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);  // PCM, mono
+    v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    ascii(36, 'data'); v.setUint32(40, n * 2, true);
+    let at = 44;
+    for (const c of chunks) for (const s of c) { v.setInt16(at, Math.max(-1, Math.min(1, s)) * 0x7fff, true); at += 2; }
+    return new Blob([v], { type: 'audio/wav' });
+  }
+
+  // The mic button and the shortcut: start listening, send what it heard, or hush the owl.
+  function pressTalk() {
+    if (!voice()) return;
+    audio().resume();  // inside the click or keypress, so the owl may answer out loud
+    if (talk === 'speaking') voiceOut?.stop();
+    else if (rec) stopListening(Date.now() - rec.start > 500);
+    else startListening();
+  }
+  $('mic').addEventListener('click', pressTalk);
+
+  $('chat').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = $('chat-text').value;
+    if (!text.trim() || talk) return;
+    if (voice()) audio().resume();  // inside the keypress or click, so the reply may play
+    $('chat-text').value = '';
+    converse(text);
+  });
+
+  function defaultHint() {
+    if (!canChat()) hint('Set GROQ_API_KEY in the shell that starts the app to talk to the owl.', true);
+    else if (!voice()) hint('Type to the owl. Voice needs GROQ_API_KEY for speech to text.');
+    else hint(`Press ${info.shortcut ? info.shortcut + ' or ' : ''}the mic and talk, or type.`);
+  }
+
+  function setupChat() {
+    $('chat-text').disabled = $('chat-send').disabled = !canChat();
+    $('mic').disabled = !voice() || !navigator.mediaDevices?.getUserMedia;
+    if (info.shortcut) $('mic').title = `Talk to the owl (${info.shortcut})`;
+    defaultHint();
+  }
+
+  (async () => {
+    await listen('message', ({ payload: [topic, json] }) => onMessage(topic, json));
+    await listen('pointer-left', pointerLeft);  // Linux: WebKitGTK has no mouseleave here
+    await listen('connected', ({ payload }) => { info.connected = payload; render(); });
+    await listen('talk', pressTalk);  // the shortcut, or `studysphere --talk` from the desktop
+    info = await invoke('info');
+    setupChat();
+    render();
+    go('expanded');  // say hello, then tuck away
+    setTimeout(blink, 2000);
+    setInterval(tick, 1000);
+    setInterval(() => station && ask(), ASK_MS);
+  })();
+</script>
+</body>
+</html>

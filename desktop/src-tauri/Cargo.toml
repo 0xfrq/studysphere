@@ -1,0 +1,22 @@
+[package]
+name = "studysphere"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde_json = "1"
+rumqttd = { version = "0.20", default-features = false }
+rumqttc = { version = "0.25", default-features = false }
+if-addrs = "0.15"
+tauri-plugin-single-instance = "2"
+tauri-plugin-global-shortcut = "2"
+
+# The island is a layer-shell overlay on Wayland: the GTK window Tauri already runs on, and
+# libgtk-layer-shell loaded at run time so the app still starts where it is missing (GNOME).
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+libloading = "0.7"

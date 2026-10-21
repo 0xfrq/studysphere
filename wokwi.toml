@@ -1,0 +1,16 @@
+[wokwi]
+version = 1
+firmware = 'firmware/build/firmware.ino.merged.bin'
+elf = 'firmware/build/firmware.ino.elf'
+
+[[chip]]
+name = 'dht11'
+binary = 'chips/dht11.chip.wasm'
+
+[[chip]]
+name = 'mq135'
+binary = 'chips/mq135.chip.wasm'
+
+[[chip]]
+name = 'hc-sr501'
+binary = 'chips/hc-sr501.chip.wasm'

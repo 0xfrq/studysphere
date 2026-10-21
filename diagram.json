@@ -1,0 +1,252 @@
+{
+  "version": 1,
+  "author": "wirelab",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": -31,
+      "left": 62,
+      "attrs": {}
+    },
+    {
+      "type": "chip-hc-sr501",
+      "id": "pir",
+      "top": -172,
+      "left": -241,
+      "attrs": {
+        "delayTime": "5",
+        "inhibitTime": "1.2",
+        "retrigger": "1"
+      }
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr",
+      "top": 50,
+      "left": -462,
+      "rotate": 180,
+      "attrs": {}
+    },
+    {
+      "type": "chip-mq135",
+      "id": "mq135",
+      "top": 283,
+      "left": -285,
+      "attrs": {
+        "ppm": "400",
+        "threshold": "1.0"
+      }
+    },
+    {
+      "type": "chip-dht11",
+      "id": "dht1",
+      "top": -1,
+      "left": 290,
+      "attrs": {
+        "temperature": "25",
+        "humidity": "50"
+      }
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd1",
+      "top": 200,
+      "left": 250,
+      "attrs": {
+        "pins": "i2c"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -110,
+      "left": 190,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -170,
+      "left": 300,
+      "attrs": {
+        "color": "yellow"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "pir:VCC",
+      "esp:5V",
+      "red",
+      [
+        "v13",
+        "h114",
+        "v218"
+      ]
+    ],
+    [
+      "pir:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "v21",
+        "h105",
+        "v162"
+      ]
+    ],
+    [
+      "pir:OUT",
+      "esp:27",
+      "green",
+      [
+        "v44",
+        "h109",
+        "v111"
+      ]
+    ],
+    [
+      "ldr:VCC",
+      "esp:5V",
+      "red",
+      [
+        "h-20",
+        "v76",
+        "h217",
+        "v12",
+        "h198",
+        "v-28"
+      ]
+    ],
+    [
+      "ldr:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "v55",
+        "h197",
+        "v-32"
+      ]
+    ],
+    [
+      "ldr:AO",
+      "esp:34",
+      "orange",
+      [
+        "v-35",
+        "h197",
+        "v1",
+        "h197",
+        "v-10"
+      ]
+    ],
+    [
+      "mq135:VCC",
+      "esp:5V",
+      "red",
+      [
+        "v91",
+        "h144",
+        "v-233"
+      ]
+    ],
+    [
+      "mq135:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "v72",
+        "h139",
+        "v-242",
+        "h161"
+      ]
+    ],
+    [
+      "mq135:AO",
+      "esp:35",
+      "orange",
+      [
+        "v5",
+        "h129",
+        "v-272",
+        "h129"
+      ]
+    ],
+    [
+      "dht1:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "dht1:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "dht1:DATA",
+      "esp:4",
+      "green",
+      []
+    ],
+    [
+      "lcd1:GND",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "lcd1:VCC",
+      "esp:5V",
+      "red",
+      []
+    ],
+    [
+      "lcd1:SDA",
+      "esp:21",
+      "green",
+      []
+    ],
+    [
+      "lcd1:SCL",
+      "esp:22",
+      "blue",
+      []
+    ],
+    [
+      "esp:13",
+      "r1:1",
+      "orange",
+      []
+    ],
+    [
+      "r1:2",
+      "led1:A",
+      "orange",
+      []
+    ],
+    [
+      "led1:C",
+      "esp:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

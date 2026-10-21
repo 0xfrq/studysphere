@@ -1,0 +1,15 @@
+firmware/build/
+chips/wokwi-api.h
+hardware/*.kicad_prl
+hardware/*.lck
+hardware/*-backups/
+hardware/fp-info-cache
+alatnya cu/build/
+
+# AI training outputs, generated datasets (hundreds of MB), and Python caches
+ai/out/
+ai/data/planner/
+ai/data/responder/
+ai/data/combined/
+__pycache__/
+*.pyc

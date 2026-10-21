@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "studysphere")(type "KiCad")(uri "${KIPRJMOD}/studysphere.pretty")(options "")(descr "StudySphere parts"))
+)

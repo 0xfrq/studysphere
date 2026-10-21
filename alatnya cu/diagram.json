@@ -1,0 +1,388 @@
+{
+  "version": 1,
+  "author": "wirelab",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "sonar",
+      "top": 68.2,
+      "left": 44,
+      "rotate": 90,
+      "attrs": {
+        "distance": "100"
+      }
+    },
+    {
+      "type": "chip-dht11",
+      "id": "dht1",
+      "top": 160,
+      "left": 200,
+      "attrs": {
+        "temperature": "28",
+        "humidity": "60"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "vent",
+      "top": -75,
+      "left": -362,
+      "rotate": 180,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd1",
+      "top": 300,
+      "left": 60,
+      "attrs": {
+        "pins": "i2c"
+      }
+    },
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "top": 240,
+      "left": -330,
+      "attrs": {}
+    },
+    {
+      "type": "chip-dc-fan",
+      "id": "fan",
+      "top": 150,
+      "left": -300,
+      "attrs": {}
+    },
+    {
+      "type": "chip-mq135",
+      "id": "mq135",
+      "top": 345,
+      "left": -600,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "mh",
+      "top": 250,
+      "left": -580,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd2",
+      "top": 520,
+      "left": -250,
+      "attrs": {
+        "pins": "i2c"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "sonar:TRIG",
+      "esp:22",
+      "orange",
+      []
+    ],
+    [
+      "sonar:ECHO",
+      "esp:21",
+      "purple",
+      [
+        "h-35"
+      ]
+    ],
+    [
+      "sonar:GND",
+      "esp:GND.3",
+      "black",
+      [
+        "h-25"
+      ]
+    ],
+    [
+      "sonar:VCC",
+      "esp:5V",
+      "red",
+      [
+        "h-12",
+        "v-100",
+        "*",
+        "h-0"
+      ]
+    ],
+    [
+      "dht1:DATA",
+      "esp:4",
+      "green",
+      [
+        "v12",
+        "h-90",
+        "*",
+        "h-20"
+      ]
+    ],
+    [
+      "dht1:GND",
+      "esp:GND.3",
+      "black",
+      [
+        "v24",
+        "h-110"
+      ]
+    ],
+    [
+      "dht1:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "v10",
+        "h68.6",
+        "v-308",
+        "*",
+        "h20"
+      ]
+    ],
+    [
+      "vent:PWM",
+      "esp:32",
+      "orange",
+      [
+        "h20"
+      ]
+    ],
+    [
+      "vent:V+",
+      "esp:5V",
+      "red",
+      [
+        "h12"
+      ]
+    ],
+    [
+      "vent:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h4"
+      ]
+    ],
+    [
+      "lcd1:SCL",
+      "esp:33",
+      "blue",
+      [
+        "h-90"
+      ]
+    ],
+    [
+      "lcd1:SDA",
+      "esp:25",
+      "green",
+      [
+        "h-80"
+      ]
+    ],
+    [
+      "lcd1:VCC",
+      "esp:5V",
+      "red",
+      [
+        "h-66"
+      ]
+    ],
+    [
+      "lcd1:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h-70"
+      ]
+    ],
+    [
+      "uno:1",
+      "esp:27",
+      "yellow",
+      [
+        "v-60",
+        "*",
+        "h20"
+      ]
+    ],
+    [
+      "uno:0",
+      "esp:26",
+      "white",
+      [
+        "v-70",
+        "*",
+        "h30"
+      ]
+    ],
+    [
+      "uno:GND.1",
+      "esp:GND.1",
+      "black",
+      [
+        "v-30",
+        "*",
+        "h10"
+      ]
+    ],
+    [
+      "fan:+",
+      "uno:13",
+      "red",
+      [
+        "v10"
+      ]
+    ],
+    [
+      "fan:+",
+      "uno:12",
+      "red",
+      [
+        "v10"
+      ]
+    ],
+    [
+      "fan:-",
+      "uno:GND.1",
+      "black",
+      [
+        "v20"
+      ]
+    ],
+    [
+      "mq135:VCC",
+      "uno:5V",
+      "red",
+      [
+        "v56"
+      ]
+    ],
+    [
+      "mq135:GND",
+      "uno:GND.2",
+      "black",
+      [
+        "v46"
+      ]
+    ],
+    [
+      "mq135:AO",
+      "uno:A0",
+      "orange",
+      [
+        "v36"
+      ]
+    ],
+    [
+      "mq135:DO",
+      "uno:2",
+      "violet",
+      [
+        "v66",
+        "h-30",
+        "v-385",
+        "*",
+        "v15"
+      ]
+    ],
+    [
+      "mh:VCC",
+      "uno:5V",
+      "red",
+      [
+        "h48",
+        "v189"
+      ]
+    ],
+    [
+      "mh:GND",
+      "uno:GND.2",
+      "black",
+      [
+        "h38",
+        "v189"
+      ]
+    ],
+    [
+      "mh:AO",
+      "uno:A3",
+      "orange",
+      [
+        "h28",
+        "v179.5"
+      ]
+    ],
+    [
+      "mh:DO",
+      "uno:11",
+      "violet",
+      [
+        "h10",
+        "v-150",
+        "*",
+        "v15"
+      ]
+    ],
+    [
+      "lcd2:VCC",
+      "uno:5V",
+      "red",
+      [
+        "h-20",
+        "v-47.5"
+      ]
+    ],
+    [
+      "lcd2:GND",
+      "uno:GND.3",
+      "black",
+      [
+        "h-12",
+        "v-35"
+      ]
+    ],
+    [
+      "lcd2:SDA",
+      "uno:A4",
+      "green",
+      [
+        "h-28",
+        "v-60"
+      ]
+    ],
+    [
+      "lcd2:SCL",
+      "uno:A5",
+      "blue",
+      [
+        "h-36",
+        "v-72.5"
+      ]
+    ]
+  ],
+  "dependencies": {}
+}

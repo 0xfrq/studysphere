@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "studysphere")(type "KiCad")(uri "${KIPRJMOD}/studysphere.kicad_sym")(options "")(descr "StudySphere parts"))
+)

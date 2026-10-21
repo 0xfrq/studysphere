@@ -1,0 +1,10 @@
+{
+  "name": "studysphere-desktop",
+  "private": true,
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

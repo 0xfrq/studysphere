@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "ui/index.html"
+        ],
+        "createdAt": "2026-10-20T11:58:29.954Z",
+        "reason": "Claude: html/body are transparent by design (Tauri island); all text sits on --island #0b0c0e or --card #17181c, never on the assumed white"
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+# Planner: Gemma 3 270M + LoRA, merged and quantized to Q4_K_M.
+# Put the GGUF next to this file, then:
+#   ollama create studysphere-planner -f ai/serve/ollama/Modelfile.planner
+FROM ./studysphere-planner-q4_k_m.gguf
+
+PARAMETER temperature 0
+PARAMETER top_p 0.9
+PARAMETER num_predict 96
+PARAMETER stop "<end_of_turn>"
+PARAMETER stop "<start_of_turn>"
+
+# Ollama reads the chat template embedded in the GGUF by llama.cpp.  If your
+# conversion dropped it, uncomment the Gemma 3 template below.
+# TEMPLATE """{{- range $i, $_ := .Messages }}
+# {{- $last := eq (len (slice $.Messages $i)) 1 -}}
+# {{- if eq .Role "user" }}<start_of_turn>user
+# {{ .Content }}<end_of_turn>
+# {{ else if eq .Role "assistant" }}<start_of_turn>model
+# {{ .Content }}<end_of_turn>
+# {{ else if eq .Role "system" }}<start_of_turn>system
+# {{ .Content }}<end_of_turn>
+# {{ end }}
+# {{- if and $last (ne .Role "assistant") }}<start_of_turn>model
+# {{ end }}
+# {{- end }}"""

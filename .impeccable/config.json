@@ -1,0 +1,35 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "desktop/ui/index.html"
+        ],
+        "createdAt": "2026-10-18T14:24:30.774Z",
+        "reason": "Claude decided: the island's width/height morph is the core interaction; the native window is resized on every state change anyway, which relayouts the whole page, and the island's children are absolutely positioned with fixed widths so nothing reflows"
+      },
+      {
+        "rule": "pulsing-dot",
+        "value": "*",
+        "files": [
+          "desktop/ui/index.html"
+        ],
+        "createdAt": "2026-10-20T16:40:39.351Z",
+        "reason": "Claude decided: .dots is the owl's thinking indicator, shown only while a speech-to-text or chat-model request is in flight, so the motion is tied to live state"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "desktop/ui/index.html"
+        ],
+        "createdAt": "2026-10-20T16:40:39.362Z",
+        "reason": "Claude decided: the flagged div is #island, whose only child is the #clip mask (inset 0); text inset comes from each view's own padding (#expanded 12px 20px, #compact 0 18px 0 12px)"
+      }
+    ]
+  }
+}

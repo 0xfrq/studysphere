@@ -1,0 +1,27 @@
+{
+  "name": "DHT11 Temperature & Humidity",
+  "author": "wirelab",
+  "pins": [
+    "VCC",
+    "DATA",
+    "GND"
+  ],
+  "controls": [
+    {
+      "id": "temperature",
+      "label": "Temperature (\u00b0C)",
+      "type": "range",
+      "min": 0,
+      "max": 50,
+      "step": 1
+    },
+    {
+      "id": "humidity",
+      "label": "Humidity (%RH)",
+      "type": "range",
+      "min": 20,
+      "max": 90,
+      "step": 1
+    }
+  ]
+}

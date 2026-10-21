@@ -1,0 +1,27 @@
+{
+  "name": "HC-SR501 PIR",
+  "author": "wirelab",
+  "pins": [
+    "VCC",
+    "OUT",
+    "GND"
+  ],
+  "controls": [
+    {
+      "id": "motion",
+      "label": "Motion (0/1)",
+      "type": "range",
+      "min": 0,
+      "max": 1,
+      "step": 1
+    },
+    {
+      "id": "delayTime",
+      "label": "Time delay knob (s)",
+      "type": "range",
+      "min": 3,
+      "max": 300,
+      "step": 1
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "description": "StudySphere semantic information registry and task taxonomy. Derived from firmware/firmware.ino, alatnya cu/studysphere_esp32.ino, desktop/ui/index.html, README.md and draft.pdf.",
+  "canonical_order": [
+    "occupancy",
+    "session_duration",
+    "temperature",
+    "humidity",
+    "lighting",
+    "air_quality",
+    "co2",
+    "lamp",
+    "lamp_mode",
+    "fan",
+    "vent"
+  ],
+  "information": {
+    "temperature": {
+      "unit": "degree Celsius",
+      "source": "dht22",
+      "source_cost": 2,
+      "max_age_ms": 60000,
+      "devices": ["node", "station"],
+      "notes": "DHT11 on the room node, DHT22 on the station. Rounded to 0.1 C by firmware."
+    },
+    "humidity": {
+      "unit": "% RH",
+      "source": "dht22",
+      "source_cost": 2,
+      "max_age_ms": 60000,
+      "devices": ["node", "station"],
+      "notes": "Same DHT read as temperature; marginal sensing cost is zero once temperature is read."
+    },
+    "lighting": {
+      "unit": "lux",
+      "source": "arduino_uart",
+      "source_cost": 3,
+      "max_age_ms": 10000,
+      "devices": ["node", "station"],
+      "notes": "Room node exposes lux. The station exposes a bright/dark level plus a raw LDR value; treat it as bright/dark, not lux."
+    },
+    "air_quality": {
+      "unit": "level",
+      "source": "arduino_uart",
+      "source_cost": 3,
+      "max_age_ms": 30000,
+      "devices": ["node", "station"],
+      "notes": "Node: good/stale derived from estimated CO2. Station: good/moderate/poor/warmup from the MQ-135 on the UNO. MQ-135 is not a true CO2 sensor."
+    },
+    "co2": {
+      "unit": "ppm (estimated)",
+      "source": "mq135",
+      "source_cost": 3,
+      "max_age_ms": 30000,
+      "devices": ["node"],
+      "notes": "Estimated from MQ-135, not a calibrated NDIR CO2 measurement. Only the room node exposes this name."
+    },
+    "occupancy": {
+      "unit": "boolean",
+      "source": "hcsr04",
+      "source_cost": 1,
+      "max_age_ms": 3000,
+      "devices": ["node", "station"],
+      "notes": "Node: PIR with a 60 s idle timeout. Station: HC-SR04 presence within PRESENCE_CM."
+    },
+    "session_duration": {
+      "unit": "seconds",
+      "source": "derived",
+      "source_cost": 1,
+      "max_age_ms": 3000,
+      "devices": ["node", "station"],
+      "notes": "Seconds since the current study session started; 0 when nobody is present."
+    },
+    "mh_sensor": {
+      "unit": "bright/dark",
+      "source": "arduino_uart",
+      "source_cost": 3,
+      "max_age_ms": 10000,
+      "devices": ["station"],
+      "notes": "Digital LDR module output on the UNO. The station's lighting object also carries this signal."
+    },
+    "lamp": {
+      "unit": "on/off",
+      "source": "state",
+      "source_cost": 0,
+      "max_age_ms": 0,
+      "devices": ["node"],
+      "notes": "Current lamp output, already present in telemetry; no sensing needed."
+    },
+    "lamp_mode": {
+      "unit": "auto/on/off",
+      "source": "state",
+      "source_cost": 0,
+      "max_age_ms": 0,
+      "devices": ["node"],
+      "notes": "Current lamp mode. Auto turns the lamp on when someone is present and lighting < 150 lux."
+    },
+    "fan": {
+      "unit": "on/off",
+      "source": "state",
+      "source_cost": 0,
+      "max_age_ms": 0,
+      "devices": ["station"],
+      "notes": "Station fan state; reported on the state topic."
+    },
+    "vent": {
+      "unit": "0-180 degrees",
+      "source": "state",
+      "source_cost": 0,
+      "max_age_ms": 0,
+      "devices": ["station"],
+      "notes": "Station servo angle; open is about 180, closed about 0."
+    }
+  },
+  "tasks": {
+    "room_status": "Report one or more concrete readings or device states.",
+    "study_environment_assessment": "Judge whether the room is suitable for studying.",
+    "thermal_comfort_check": "Judge temperature and, when relevant, humidity comfort.",
+    "air_quality_check": "Judge air freshness or report CO2 / MQ-135 level.",
+    "lighting_check": "Judge whether the desk is bright enough or whether the lamp should be on.",
+    "occupancy_check": "Report whether someone is present or how long the study session has run.",
+    "study_break_advice": "Decide whether the student should take a break.",
+    "ventilation_decision": "Decide whether to open a window or the station vent.",
+    "energy_saving_check": "Check for wasted energy, e.g. lamp or fan on with nobody present.",
+    "lamp_control": "Change the room node lamp mode.",
+    "fan_control": "Change the station fan mode.",
+    "vent_control": "Open or close the station vent.",
+    "lcd_message": "Show a short message on the 16x2 LCD.",
+    "general_chat": "Greeting, thanks, or chit-chat that needs no sensor reading."
+  },
+  "command_tasks": [
+    "lamp_control",
+    "fan_control",
+    "vent_control",
+    "lcd_message",
+    "general_chat"
+  ],
+  "moods": ["happy", "normal", "sleepy", "dizzy", "wide", "love", "wink", "thinking"],
+  "commands": {
+    "node": {
+      "lamp": ["auto", "on", "off"],
+      "lcd": "string up to 32 characters"
+    },
+    "station": {
+      "fan": ["auto", "on", "off"],
+      "vent": ["open", "closed"],
+      "lcd": "string up to 32 characters"
+    }
+  },
+  "thresholds": {
+    "dark_lux": 150,
+    "co2_stale_ppm": 1000,
+    "hot_c": 32,
+    "fan_on_c": 30,
+    "fan_off_c": 29,
+    "idle_session_end_s": 60,
+    "lcd_max_chars": 32
+  }
+}

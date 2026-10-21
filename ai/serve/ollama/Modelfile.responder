@@ -1,0 +1,26 @@
+# Responder: Qwen3 1.7B (or Gemma 3 1B) + LoRA, merged and quantized to Q4_K_M.
+# Put the GGUF next to this file, then:
+#   ollama create studysphere-responder -f ai/serve/ollama/Modelfile.responder
+FROM ./studysphere-responder-q4_k_m.gguf
+
+PARAMETER temperature 0.4
+PARAMETER top_p 0.9
+PARAMETER num_predict 220
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+
+# Ollama reads the chat template embedded in the GGUF by llama.cpp.  If your
+# conversion dropped it, uncomment the Qwen3 template below and keep thinking
+# disabled in the system prompt or the template.
+# TEMPLATE """{{- range $i, $_ := .Messages }}
+# {{- $last := eq (len (slice $.Messages $i)) 1 -}}
+# {{- if eq .Role "user" }}<|im_start|>user
+# {{ .Content }}<|im_end|>
+# {{ else if eq .Role "assistant" }}<|im_start|>assistant
+# {{ .Content }}<|im_end|>
+# {{ else if eq .Role "system" }}<|im_start|>system
+# {{ .Content }}<|im_end|>
+# {{ end }}
+# {{- if and $last (ne .Role "assistant") }}<|im_start|>assistant
+# {{ end }}
+# {{- end }}"""

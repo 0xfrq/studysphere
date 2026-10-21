@@ -1,0 +1,11 @@
+# Python 3.10-3.12.  Tested with CUDA 12.x.  On Windows, use WSL2 or Colab for
+# bitsandbytes/QLoRA; plain bf16 LoRA also works in native Windows.
+torch>=2.4,<2.9
+transformers>=4.53,<5
+datasets>=3.6,<5
+accelerate>=1.8,<2
+peft>=0.16,<1
+bitsandbytes>=0.46; platform_system != "Darwin"
+sentencepiece>=0.2
+protobuf>=5
+safetensors>=0.4

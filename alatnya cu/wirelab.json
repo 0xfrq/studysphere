@@ -1,0 +1,10 @@
+{
+  "boards": {
+    "esp": "studysphere_esp32.ino",
+    "uno": "studysphere_arduino.ino"
+  },
+  "engine": "local",
+  "hosts": {
+    "192.168.1.10": "127.0.0.1"
+  }
+}
